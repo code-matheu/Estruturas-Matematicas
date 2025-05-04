@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 const controls = document.getElementById("controls");
 const canvasWrapper = document.getElementById("canvasWrapper");
 const menu = document.querySelector(".menu");
+const gameBoard = document.getElementById("game-board");
 
 let a = 1.0, b = 0.0, c = 0.0;
 let currentGame = 0;
@@ -14,22 +15,9 @@ let fireworks = [];
 let funcaoCorreta = null;
 let opcoesFuncao = [];
 let rodada3 = 0;
-
-const botoes = [
-  { id: 1, label: "Jogo 1: Parábolas" },
-  { id: 2, label: "Jogo 2: Conjuntos" },
-  { id: 3, label: "Jogo 3: Funções Lineares" }
-];
+let board = [];
 
 window.addEventListener("load", () => {
-  menu.innerHTML = "";
-  botoes.forEach(botao => {
-    const el = document.createElement("button");
-    el.textContent = botao.label;
-    el.style.margin = "10px";
-    el.onclick = () => startGame(botao.id);
-    menu.appendChild(el);
-  });
   if (localStorage.getItem("pontuacao2")) pontuacao = parseInt(localStorage.getItem("pontuacao2"));
   if (localStorage.getItem("pontuacao3")) pontuacao3 = parseInt(localStorage.getItem("pontuacao3"));
 });
@@ -42,11 +30,7 @@ function drawText(text, x, y, color = "#000", size = 16) {
 
 function drawParabola() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#888";
-  ctx.beginPath();
-  ctx.moveTo(0, canvas.height / 2); ctx.lineTo(canvas.width, canvas.height / 2);
-  ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height);
-  ctx.stroke();
+  drawAxes();
   ctx.beginPath();
   ctx.strokeStyle = "#0000cc";
   ctx.lineWidth = 2;
@@ -55,10 +39,42 @@ function drawParabola() {
     let x = (px - canvas.width / 2) / 40;
     let y = a * x * x + b * x + c;
     let py = canvas.height / 2 - y * 40;
-    if (first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+    if (first) {
+      ctx.moveTo(px, py);
+      first = false;
+    } else {
+      ctx.lineTo(px, py);
+    }
   }
   ctx.stroke();
   drawText(`f(x) = ${a.toFixed(1)}x² + ${b.toFixed(1)}x + ${c.toFixed(1)}`, 20, 40, "#0000cc", 12);
+}
+
+function drawAxes() {
+  ctx.strokeStyle = "#888";
+  ctx.lineWidth = 1;
+  const step = 40;
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.beginPath();
+  for (let x = 0; x <= w; x += step) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+  }
+  for (let y = 0; y <= h; y += step) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = "#000";
+  ctx.beginPath();
+  ctx.moveTo(0, h / 2);
+  ctx.lineTo(w, h / 2);
+  ctx.moveTo(w / 2, 0);
+  ctx.lineTo(w / 2, h);
+  ctx.stroke();
 }
 
 function gerarConjuntoAleatorio() {
@@ -132,43 +148,131 @@ function gerarOpcoes(correta) {
 
 function desenharGraficoFuncao(f) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#ccc";
+  drawAxes();
   ctx.beginPath();
-  ctx.moveTo(0, canvas.height / 2); ctx.lineTo(canvas.width, canvas.height / 2);
-  ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height);
-  ctx.stroke();
-  ctx.beginPath(); ctx.strokeStyle = "#cc0000"; ctx.lineWidth = 2;
+  ctx.strokeStyle = "#cc0000";
+  ctx.lineWidth = 2;
   let first = true;
   for (let px = 0; px < canvas.width; px++) {
     let x = (px - canvas.width / 2) / 40;
     let y = f.m * x + f.b;
     let py = canvas.height / 2 - y * 40;
-    if (first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+    if (first) {
+      ctx.moveTo(px, py);
+      first = false;
+    } else {
+      ctx.lineTo(px, py);
+    }
   }
   ctx.stroke();
 }
 
-function mostrarVitoria() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawText("VOCÊ VENCEU!", 200, 280, "#CC0000", 18);
-  fireworks = Array.from({ length: 50 }, () => ({
-    x: Math.random() * canvas.width,
-    y: canvas.height,
-    vx: (Math.random() - 0.5) * 5,
-    vy: -Math.random() * 10 - 5,
-    color: `hsl(${Math.random() * 360}, 100%, 50%)`
-  }));
-  animateFireworks();
+function iniciar2048() {
+  board = Array.from({ length: 4 }, () => [0, 0, 0, 0]);
+  addNewTile();
+  addNewTile();
+  draw2048();
 }
 
-function animateFireworks() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let f of fireworks) {
-    ctx.fillStyle = f.color;
-    ctx.beginPath(); ctx.arc(f.x, f.y, 3, 0, Math.PI * 2); ctx.fill();
-    f.x += f.vx; f.y += f.vy; f.vy += 0.2;
+function draw2048() {
+  gameBoard.innerHTML = "";
+  gameBoard.style.display = "grid";
+  canvasWrapper.style.display = "none";
+  canvas.style.display = "none";
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+      if (board[i][j] !== 0) {
+        tile.textContent = board[i][j];
+        tile.style.backgroundColor = "#f39c12";
+      }
+      gameBoard.appendChild(tile);
+    }
   }
-  requestAnimationFrame(animateFireworks);
+}
+
+function addNewTile() {
+  const empty = [];
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      if (board[i][j] === 0) empty.push({ x: i, y: j });
+    }
+  }
+  if (empty.length > 0) {
+    const r = empty[Math.floor(Math.random() * empty.length)];
+    board[r.x][r.y] = 2;
+  }
+}
+
+function moveLeft() {
+  for (let i = 0; i < 4; i++) {
+    let row = board[i].filter(n => n !== 0);
+    for (let j = 0; j < row.length - 1; j++) {
+      if (row[j] === row[j + 1]) {
+        row[j] *= 2;
+        row[j + 1] = 0;
+      }
+    }
+    row = row.filter(n => n !== 0);
+    while (row.length < 4) row.push(0);
+    board[i] = row;
+  }
+  addNewTile();
+  draw2048();
+}
+
+function moveRight() {
+  for (let i = 0; i < 4; i++) {
+    let row = board[i].filter(n => n !== 0);
+    for (let j = row.length - 1; j > 0; j--) {
+      if (row[j] === row[j - 1]) {
+        row[j] *= 2;
+        row[j - 1] = 0;
+      }
+    }
+    row = row.filter(n => n !== 0);
+    while (row.length < 4) row.unshift(0);
+    board[i] = row;
+  }
+  addNewTile();
+  draw2048();
+}
+
+function moveUp() {
+  for (let j = 0; j < 4; j++) {
+    let col = [];
+    for (let i = 0; i < 4; i++) if (board[i][j] !== 0) col.push(board[i][j]);
+    for (let i = 0; i < col.length - 1; i++) {
+      if (col[i] === col[i + 1]) {
+        col[i] *= 2;
+        col[i + 1] = 0;
+      }
+    }
+    col = col.filter(n => n !== 0);
+    while (col.length < 4) col.push(0);
+    for (let i = 0; i < 4; i++) board[i][j] = col[i];
+  }
+  addNewTile();
+  draw2048();
+}
+
+function moveDown() {
+  for (let j = 0; j < 4; j++) {
+    let col = [];
+    for (let i = 0; i < 4; i++) if (board[i][j] !== 0) col.push(board[i][j]);
+    for (let i = col.length - 1; i > 0; i--) {
+      if (col[i] === col[i - 1]) {
+        col[i] *= 2;
+        col[i - 1] = 0;
+      }
+    }
+    col = col.filter(n => n !== 0);
+    while (col.length < 4) col.unshift(0);
+    for (let i = 0; i < 4; i++) board[i][j] = col[i];
+  }
+  addNewTile();
+  draw2048();
 }
 
 function startGame(n) {
@@ -176,10 +280,12 @@ function startGame(n) {
   canvas.style.display = "block";
   controls.style.display = "block";
   canvasWrapper.style.display = "flex";
+  gameBoard.style.display = "none";
   menu.style.display = "none";
   if (n === 1) drawParabola();
   if (n === 2) { pontuacao = 0; novaRodadaJogo2(); }
   if (n === 3) { pontuacao3 = 0; rodada3 = 0; novaRodadaJogo3(); }
+  if (n === 4) iniciar2048();
 }
 
 function returnToMenu() {
@@ -187,6 +293,7 @@ function returnToMenu() {
   canvas.style.display = "none";
   controls.style.display = "none";
   canvasWrapper.style.display = "none";
+  gameBoard.style.display = "none";
   menu.style.display = "block";
   conjuntoPergunta = null;
 }
@@ -208,5 +315,11 @@ window.addEventListener("keydown", (e) => {
   }
   if (currentGame === 3 && ["1", "2", "3"].includes(e.key)) {
     verificarRespostaJogo3(parseInt(e.key) - 1);
+  }
+  if (currentGame === 4) {
+    if (e.key === "ArrowLeft") moveLeft();
+    if (e.key === "ArrowRight") moveRight();
+    if (e.key === "ArrowUp") moveUp();
+    if (e.key === "ArrowDown") moveDown();
   }
 });
