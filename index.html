@@ -5,16 +5,11 @@
   <title>Matemática Retrô</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       background: repeating-linear-gradient(
-        45deg,
-        #f5f5dc,
-        #f5f5dc 10px,
-        #f0f0d0 10px,
-        #f0f0d0 20px
+        45deg, #f5f5dc, #f5f5dc 10px,
+        #f0f0d0 10px, #f0f0d0 20px
       );
       color: #2a2a2a;
       font-family: 'Press Start 2P', monospace;
@@ -89,25 +84,44 @@
       height: 100%;
       pointer-events: none;
       background: repeating-linear-gradient(
-        transparent,
-        transparent 2px,
+        transparent, transparent 2px,
         rgba(0, 0, 0, 0.05) 3px,
         rgba(0, 0, 0, 0.05) 4px
       );
     }
+    #game-board {
+      display: none;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: 300px;
+      margin: 20px auto;
+    }
+    .tile {
+      width: 60px;
+      height: 60px;
+      background-color: lightgray;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+    }
   </style>
 </head>
 <body>
-  <h1>★ Let's Learn Mathematics ★</h1>
+  <h1>★ Matemática Retrô ★</h1>
   <div class="menu">
     <button onclick="startGame(1)">Jogo 1: Parábolas</button>
     <button onclick="startGame(2)">Jogo 2: Conjuntos</button>
-    <button disabled>Jogo 3: Funções Lineares</button>
+    <button onclick="startGame(3)">Jogo 3: Funções Lineares</button>
+    <button onclick="startGame(4)">Jogo 4: 2048</button>
   </div>
   <div id="controls">Use Q/A para alterar 'a', W/S para 'b', E/D para 'c' | ESC para voltar</div>
   <div class="canvas-wrapper" id="canvasWrapper">
     <canvas id="gameCanvas" width="800" height="600"></canvas>
   </div>
+  <div id="game-board"></div>
   <script src="main.js"></script>
 </body>
 </html>
