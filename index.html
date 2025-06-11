@@ -15,27 +15,45 @@
       font-family: 'Press Start 2P', monospace;
       margin: 0;
       padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
     }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+      padding: 20px;
+    }
+    
     h1 {
       font-size: 2em;
-      margin: 20px auto;
+      margin: 20px 0;
       text-align: center;
       color: #000;
       text-shadow: 2px 2px #888;
       animation: blinkTitle 1s steps(2, start) infinite;
     }
+    
     @keyframes blinkTitle {
       50% { opacity: 0; }
     }
+    
     .menu {
       text-align: center;
-      margin-top: 40px;
+      margin: 20px 0;
       animation: floatMenu 2s ease-in-out infinite alternate;
     }
+    
     @keyframes floatMenu {
       0% { transform: translateY(0); }
       100% { transform: translateY(-5px); }
     }
+    
     .menu button {
       background-color: #fffcf5;
       border: 3px solid #000;
@@ -48,10 +66,12 @@
       box-shadow: 2px 2px 0 #000;
       transition: background 0.3s, transform 0.1s;
     }
+    
     .menu button:hover {
       background: #fff1d6;
       transform: scale(1.02);
     }
+    
     #controls {
       display: none;
       text-align: center;
@@ -62,40 +82,51 @@
       position: sticky;
       top: 0;
       z-index: 10;
+      width: 100%;
+      max-width: 1200px;
     }
-    .canvas-wrapper {
+    
+    .game-area {
       display: none;
+      flex-direction: row;
       justify-content: center;
       align-items: center;
-      margin-top: 20px;
+      gap: 20px;
+      margin: 20px 0;
+      width: 100%;
+      max-width: 1200px;
     }
+    
+    .game-content {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 3px solid #000;
+      padding: 15px;
+      box-shadow: 5px 5px 0 #000;
+    }
+    
+    .canvas-container {
+      position: relative;
+    }
+    
     canvas {
       background: #fff;
       border: 4px solid #000;
       image-rendering: pixelated;
-      position: relative;
+      display: block;
     }
-    canvas::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        transparent, transparent 2px,
-        rgba(0, 0, 0, 0.05) 3px,
-        rgba(0, 0, 0, 0.05) 4px
-      );
-    }
+    
     #game-board {
       display: none;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
       width: 300px;
-      margin: 20px auto;
+      margin: 0;
     }
+    
     .tile {
       width: 60px;
       height: 60px;
@@ -107,21 +138,212 @@
       font-size: 20px;
       color: white;
     }
+    
+    #info-panel {
+      display: none;
+      width: 300px;
+      min-height: 600px;
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 3px solid #000;
+      padding: 15px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.7em;
+      line-height: 1.5;
+      box-shadow: 3px 3px 0 #000;
+    }
+    
+    #game-info {
+      color: #000;
+    }
+    
+    /* Ajustes para o jogo 4 (2048) */
+    .game-2048 {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 900px) {
+      .game-content {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      #info-panel {
+        width: 100%;
+        max-width: 800px;
+        min-height: auto;
+      }
+      
+      canvas {
+        max-width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>★ Matemática Retrô ★</h1>
-  <div class="menu">
-    <button onclick="startGame(1)">Jogo 1: Parábolas</button>
-    <button onclick="startGame(2)">Jogo 2: Conjuntos</button>
-    <button onclick="startGame(3)">Jogo 3: Funções Lineares</button>
-    <button onclick="startGame(4)">Jogo 4: 2048</button>
+  <div class="container">
+    <h1>★ Matemática Retrô ★</h1>
+    
+    <div class="menu">
+      <button onclick="startGame(1)">Jogo 1: Parábolas</button>
+      <button onclick="startGame(2)">Jogo 2: Conjuntos</button>
+      <button onclick="startGame(3)">Jogo 3: Funções Lineares</button>
+      <button onclick="startGame(4)">Jogo 4: 2048</button>
+    </div>
+    
+    <div id="controls"></div>
+    
+    <div class="game-area" id="gameArea">
+      <div class="game-content">
+        <div class="canvas-container">
+          <canvas id="gameCanvas" width="800" height="600"></canvas>
+          <div id="game-board"></div>
+        </div>
+        
+        <div id="info-panel">
+          <div id="game-info"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="controls">Use Q/A para alterar 'a', W/S para 'b', E/D para 'c' | ESC para voltar</div>
-  <div class="canvas-wrapper" id="canvasWrapper">
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-  </div>
-  <div id="game-board"></div>
-  <script src="main.js"></script>
+  
+  <script type="module">
+    // Elementos DOM compartilhados
+    export const canvas = document.getElementById("gameCanvas");
+    export const ctx = canvas.getContext("2d");
+    export const controls = document.getElementById("controls");
+    export const gameArea = document.getElementById("gameArea");
+    export const menu = document.querySelector(".menu");
+    export const gameBoard = document.getElementById("game-board");
+    export const infoPanel = document.getElementById("info-panel");
+    export const gameInfo = document.getElementById("game-info");
+
+    // Funções de desenho compartilhadas
+    export function drawText(text, x, y, color = "#000", size = 16, align = "left") {
+      ctx.fillStyle = color;
+      ctx.font = `${size}px 'Press Start 2P'`;
+      ctx.textAlign = align;
+      ctx.fillText(text, x, y);
+      ctx.textAlign = "left"; // Reset para padrão
+    }
+
+    export function drawAxes() {
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 1;
+      const step = 40;
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Grade
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += step) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+      }
+      for (let y = 0; y <= h; y += step) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+      }
+      ctx.stroke();
+
+      // Eixos principais
+      ctx.strokeStyle = "#000";
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.moveTo(w / 2, 0);
+      ctx.lineTo(w / 2, h);
+      ctx.stroke();
+
+      // Marcadores nos eixos
+      ctx.fillStyle = "#000";
+      ctx.font = "10px 'Press Start 2P'";
+      for (let x = -10; x <= 10; x++) {
+        if (x !== 0) {
+          const px = w / 2 + x * 40;
+          ctx.fillText(x.toString(), px - 5, h / 2 + 15);
+        }
+      }
+      for (let y = -7; y <= 7; y++) {
+        if (y !== 0) {
+          const py = h / 2 - y * 40;
+          ctx.fillText(y.toString(), w / 2 + 5, py + 3);
+        }
+      }
+    }
+
+    // Importações dos jogos (mantidas como no código original)
+    import * as jogo1 from './jogo1_parabolas.js';
+    import * as jogo2 from './jogo2_conjuntos.js';
+    import * as jogo3 from './jogo3_funcoes_lineares.js';
+    import * as jogo4 from './jogo4_2048.js';
+
+    let currentGame = 0;
+
+    // Carregar pontuações salvas
+    window.addEventListener("load", () => {
+      if (localStorage.getItem("pontuacao2")) jogo2.pontuacao = parseInt(localStorage.getItem("pontuacao2"));
+      if (localStorage.getItem("pontuacao3")) jogo3.pontuacao3 = parseInt(localStorage.getItem("pontuacao3"));
+    });
+
+    // Função para iniciar um jogo
+    export function startGame(n) {
+      currentGame = n;
+      gameArea.style.display = "flex";
+      controls.style.display = "block";
+      menu.style.display = "none";
+      gameBoard.style.display = "none";
+      canvas.style.display = "block";
+      infoPanel.style.display = "block";
+      
+      switch(n) {
+        case 1: 
+          jogo1.iniciar(); 
+          controls.innerHTML = `PARÁBOLAS | Q/A: alterar a | W/S: alterar b | E/D: alterar c | V/R/Y: mostrar elementos | ESC: voltar`;
+          break;
+        case 2: 
+          jogo2.iniciar();
+          controls.innerHTML = `CONJUNTOS | 1/2/3: selecionar resposta | N: mudar operação | ESC: voltar`;
+          break;
+        case 3: 
+          jogo3.iniciar();
+          controls.innerHTML = `FUNÇÕES LINEARES | 1/2/3: selecionar resposta | ESC: voltar`;
+          break;
+        case 4: 
+          jogo4.iniciar(); 
+          canvas.style.display = "none";
+          gameBoard.style.display = "grid";
+          controls.innerHTML = `2048 | SETAS: mover blocos | ESC: voltar`;
+          break;
+      }
+    }
+
+    // Função para voltar ao menu
+    function returnToMenu() {
+      currentGame = 0;
+      gameArea.style.display = "none";
+      controls.style.display = "none";
+      menu.style.display = "block";
+    }
+
+    // Torna a função startGame global para ser chamada pelos botões
+    window.startGame = startGame;
+
+    // Gerenciador de eventos de teclado
+    window.addEventListener("keydown", (e) => {
+      if (currentGame === 0) return;
+      if (e.key === "Escape") return returnToMenu();
+      
+      switch(currentGame) {
+        case 1: jogo1.tratarEvento(e.key); break;
+        case 2: jogo2.tratarEvento(e.key); break;
+        case 3: jogo3.tratarEvento(e.key); break;
+        case 4: jogo4.tratarEvento(e.key); break;
+      }
+    });
+  </script>
 </body>
 </html>
