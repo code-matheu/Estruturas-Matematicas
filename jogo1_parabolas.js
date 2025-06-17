@@ -1,17 +1,38 @@
-import { canvas, ctx, drawText, drawAxes } from './common.js';
+import { canvas, ctx, drawText, infoPanel, gameInfo } from './common.js';
 
-let a = 1.0, b = 0.0, c = 0.0;
+// Constantes
+const GRID_SIZE = 40; // Cada quadrado = 1 unidade
+
+// Variáveis para cálculo dinâmico
+let ORIGIN_X, ORIGIN_Y, MAX_X, MAX_Y;
+
+// Variáveis do jogo
+let a = 1.0;
+let b = 0.0;
+let c = 0.0;
 let showVertex = false;
 let showRoots = false;
 let showYIntercept = false;
 
 export function iniciar() {
+  // Calcular dinamicamente ao iniciar
+  ORIGIN_X = Math.round(canvas.width / 2 / GRID_SIZE) * GRID_SIZE;
+  ORIGIN_Y = Math.round(canvas.height / 2 / GRID_SIZE) * GRID_SIZE;
+  MAX_X = Math.floor((canvas.width - ORIGIN_X) / GRID_SIZE);
+  MAX_Y = Math.floor(ORIGIN_Y / GRID_SIZE);
+  
+  // Resetar todas as variáveis de estado
   a = 1.0;
   b = 0.0;
   c = 0.0;
   showVertex = false;
   showRoots = false;
   showYIntercept = false;
+  
+  // Limpar canvas completamente
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  atualizarPainelInfo();
   desenhar();
 }
 
@@ -29,22 +50,110 @@ export function tratarEvento(tecla) {
   if (tecla === "v") showVertex = !showVertex;
   if (tecla === "r") showRoots = !showRoots;
   if (tecla === "y") showYIntercept = !showYIntercept;
+  atualizarPainelInfo();
   desenhar();
+}
+
+function atualizarPainelInfo() {
+  infoPanel.style.display = "block";
+  gameInfo.innerHTML = `
+    <strong>INSTRUÇÕES:</strong><br><br>
+    <strong>Q/A</strong>: Alterar coeficiente 'a'<br>
+    <strong>W/S</strong>: Alterar coeficiente 'b'<br>
+    <strong>E/D</strong>: Alterar coeficiente 'c'<br><br>
+    <strong>VISUALIZAÇÃO:</strong><br>
+    <strong>V</strong>: ${showVertex ? "✔" : "✖"} Mostrar vértice<br>
+    <strong>R</strong>: ${showRoots ? "✔" : "✖"} Mostrar raízes<br>
+    <strong>Y</strong>: ${showYIntercept ? "✔" : "✖"} Mostrar intercepto Y<br><br>
+    <strong>EQUAÇÃO ATUAL:</strong><br>
+    f(x) = ${a.toFixed(1)}x² + ${b.toFixed(1)}x + ${c.toFixed(1)}
+  `;
+}
+
+function drawGrid() {
+  ctx.strokeStyle = "#888";
+  ctx.lineWidth = 1;
+  
+  // Linhas verticais
+  for (let x = ORIGIN_X - 10*GRID_SIZE; x <= ORIGIN_X + 10*GRID_SIZE; x += GRID_SIZE) {
+    if (x >= 0 && x <= canvas.width) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+  }
+  
+  // Linhas horizontais
+  for (let y = ORIGIN_Y - 7*GRID_SIZE; y <= ORIGIN_Y + 7*GRID_SIZE; y += GRID_SIZE) {
+    if (y >= 0 && y <= canvas.height) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawAxes() {
+  // Eixos principais
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+  
+  // Eixo X
+  ctx.beginPath();
+  ctx.moveTo(0, ORIGIN_Y);
+  ctx.lineTo(canvas.width, ORIGIN_Y);
+  ctx.stroke();
+  
+  // Eixo Y
+  ctx.beginPath();
+  ctx.moveTo(ORIGIN_X, 0);
+  ctx.lineTo(ORIGIN_X, canvas.height);
+  ctx.stroke();
+  
+  // Marcadores numéricos
+  ctx.fillStyle = "#000";
+  ctx.font = "10px 'Press Start 2P'";
+  
+  // Eixo X
+  for (let x = -10; x <= 10; x++) {
+    if (x !== 0) {
+      const px = ORIGIN_X + x * GRID_SIZE;
+      ctx.fillText(x.toString(), px - 5, ORIGIN_Y + 15);
+    }
+  }
+  
+  // Eixo Y
+  for (let y = -7; y <= 7; y++) {
+    if (y !== 0) {
+      const py = ORIGIN_Y - y * GRID_SIZE;
+      ctx.fillText(y.toString(), ORIGIN_X + 5, py + 3);
+    }
+  }
 }
 
 function drawParabola() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Desenha grade e eixos
+  drawGrid();
   drawAxes();
   
-  // Desenhar a parábola
+  // Desenha a parábola
   ctx.beginPath();
   ctx.strokeStyle = "#0000cc";
   ctx.lineWidth = 3;
   let first = true;
+  
   for (let px = 0; px < canvas.width; px++) {
-    let x = (px - canvas.width / 2) / 40;
-    let y = a * x * x + b * x + c;
-    let py = canvas.height / 2 - y * 40;
+    // Converter coordenada de tela para matemática
+    const x = (px - ORIGIN_X) / GRID_SIZE;
+    const y = a * x * x + b * x + c;
+    
+    // Converter coordenada matemática para tela
+    const py = ORIGIN_Y - y * GRID_SIZE;
+    
     if (first) {
       ctx.moveTo(px, py);
       first = false;
@@ -54,65 +163,73 @@ function drawParabola() {
   }
   ctx.stroke();
 
-  // Calcular e mostrar elementos importantes
+  // Calcular elementos importantes
   const vertex = calculateVertex();
   const roots = calculateRoots();
   const yIntercept = c;
 
   // Desenhar vértice se ativado
   if (showVertex) {
-    const vx = canvas.width / 2 + vertex.x * 40;
-    const vy = canvas.height / 2 - vertex.y * 40;
+    const vx = ORIGIN_X + vertex.x * GRID_SIZE;
+    const vy = ORIGIN_Y - vertex.y * GRID_SIZE;
     
     ctx.beginPath();
     ctx.arc(vx, vy, 8, 0, Math.PI * 2);
     ctx.fillStyle = "#ff0000";
     ctx.fill();
+    
+    // Garantir que o texto fique dentro do canvas
+    const labelX = Math.max(20, Math.min(vx + 15, canvas.width - 200));
+    const labelY = Math.max(40, Math.min(vy - 15, canvas.height - 20));
+    
     drawText(`Vértice (${vertex.x.toFixed(1)}, ${vertex.y.toFixed(1)})`, 
-             vx + 15, vy - 15, "#ff0000", 12);
+             labelX, labelY, "#ff0000", 12);
   }
 
   // Desenhar raízes se ativado
   if (showRoots && roots) {
     roots.forEach(root => {
-      const rx = canvas.width / 2 + root * 40;
-      const ry = canvas.height / 2;
+      const rx = ORIGIN_X + root * GRID_SIZE;
+      const ry = ORIGIN_Y;
       
       ctx.beginPath();
       ctx.arc(rx, ry, 8, 0, Math.PI * 2);
       ctx.fillStyle = "#00aa00";
       ctx.fill();
-      drawText(`Raiz (${root.toFixed(1)}, 0)`, rx + 15, ry - 15, "#00aa00", 12);
+      
+      // Garantir que o texto fique dentro do canvas
+      const labelX = Math.max(20, Math.min(rx + 15, canvas.width - 150));
+      const labelY = Math.max(40, Math.min(ry - 15, canvas.height - 20));
+      
+      drawText(`Raiz (${root.toFixed(1)}, 0)`, labelX, labelY, "#00aa00", 12);
     });
     
     if (roots.length === 0) {
+      // Posição fixa segura para "Sem raízes reais"
       drawText("Sem raízes reais", 40, 100, "#00aa00", 12);
     }
   }
 
   // Desenhar intercepto Y se ativado
   if (showYIntercept) {
-    const iy = canvas.height / 2 - yIntercept * 40;
+    const ix = ORIGIN_X;
+    const iy = ORIGIN_Y - yIntercept * GRID_SIZE;
     
     ctx.beginPath();
-    ctx.arc(canvas.width / 2, iy, 8, 0, Math.PI * 2);
+    ctx.arc(ix, iy, 8, 0, Math.PI * 2);
     ctx.fillStyle = "#aa00aa";
     ctx.fill();
+    
+    // Garantir que o texto fique dentro do canvas
+    const labelX = Math.max(20, Math.min(ix + 15, canvas.width - 200));
+    const labelY = Math.max(40, Math.min(iy - 15, canvas.height - 20));
+    
     drawText(`Intercepto Y (0, ${yIntercept.toFixed(1)})`, 
-             canvas.width / 2 + 15, iy - 15, "#aa00aa", 12);
+             labelX, labelY, "#aa00aa", 12);
   }
 
   // Mostrar equação e controles
   drawText(`f(x) = ${a.toFixed(1)}x² + ${b.toFixed(1)}x + ${c.toFixed(1)}`, 20, 40, "#0000cc", 14);
-  
-  // Legenda interativa
-  drawText("Controles:", 20, canvas.height - 120, "#000", 12);
-  drawText("Q/A: alterar 'a'", 40, canvas.height - 90, "#000", 10);
-  drawText("W/S: alterar 'b'", 40, canvas.height - 70, "#000", 10);
-  drawText("E/D: alterar 'c'", 40, canvas.height - 50, "#000", 10);
-  drawText("V: mostrar vértice", 40, canvas.height - 30, "#000", 10);
-  drawText("R: mostrar raízes", 40, canvas.height - 10, "#000", 10);
-  drawText("Y: mostrar intercepto Y", 200, canvas.height - 30, "#000", 10);
 }
 
 function calculateVertex() {
