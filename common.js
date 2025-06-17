@@ -58,4 +58,10 @@ export function drawAxes() {
       ctx.fillText(y.toString(), w / 2 + 5, py + 3);
     }
   }
+  // No final do common.js
+window.addEventListener("load", () => {
+  if (localStorage.getItem("pontuacao2")) jogo2.pontuacao = parseInt(localStorage.getItem("pontuacao2"));
+  if (localStorage.getItem("pontuacao3")) jogo3.pontuacao = parseInt(localStorage.getItem("pontuacao3"));
+  if (localStorage.getItem("pontuacao4")) jogo4.pontuacao = parseInt(localStorage.getItem("pontuacao4"));
+});
 }

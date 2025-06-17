@@ -1,4 +1,3 @@
-// jogo2_conjuntos.js
 import { ctx, drawText, canvas, controls, infoPanel, gameInfo } from './common.js';
 
 let conjuntoPergunta = null;
@@ -15,7 +14,13 @@ const operacoes = {
 export function iniciar() {
   pontuacao = 0;
   operacaoAtual = "∩";
-  controls.innerHTML = `CONJUNTOS | 1/2/3: selecionar | N: mudar operação | ESC: voltar`;
+  conjuntoPergunta = null;
+  opcoesRespostas = [];
+  
+  // Limpar canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  controls.innerHTML = `CONJUNTOS | 1/2/3: selecionar | ESC: voltar`;
   atualizarPainelInfo();
   novaRodadaJogo2();
 }
@@ -138,9 +143,27 @@ function drawGame2() {
   }
   drawText(pergunta, 40, 280, "#000", 16);
   
-  // Opções de resposta
+  // Opções de resposta com alinhamento dinâmico
+  let yPos = 340;
+  const maxWidth = canvas.width - 80; // Margem de 40px em cada lado
+  
   opcoesRespostas.forEach((r, i) => {
-    drawText(`[${i + 1}] ${r.join(" ")}`, 60, 340 + i * 40, "#000", 14);
+    const texto = `[${i + 1}] ${r.join(" ")}`;
+    const textWidth = ctx.measureText(texto).width;
+    
+    // Quebra em duas linhas se o texto for muito longo
+    if (textWidth > maxWidth && r.length > 3) {
+      const metade = Math.ceil(r.length / 2);
+      const linha1 = r.slice(0, metade).join(" ");
+      const linha2 = r.slice(metade).join(" ");
+      
+      drawText(`[${i + 1}] ${linha1}`, 60, yPos, "#000", 14);
+      drawText(linha2, 100, yPos + 30, "#000", 14);
+      yPos += 60; // Espaçamento maior para duas linhas
+    } else {
+      drawText(texto, 60, yPos, "#000", 14);
+      yPos += 40; // Espaçamento normal
+    }
   });
   
   // Pontuação
@@ -152,11 +175,15 @@ function verificarRespostaJogo2(opcao) {
   
   if (opcoesRespostas[opcao].join() === resultadoCorreto.join()) {
     pontuacao += 10;
-    drawText("Correto! +10 pontos", 40, 460, "#0a0", 14);
+    // Posição dinâmica abaixo das opções
+    const yFeedback = Math.min(500, 340 + opcoesRespostas.length * 60);
+    drawText("Correto! +10 pontos", 40, yFeedback, "#0a0", 14);
     setTimeout(() => novaRodadaJogo2(), 1000);
   } else {
     pontuacao = Math.max(0, pontuacao - 5);
-    drawText("Errado! -5 pontos", 40, 460, "#a00", 14);
+    // Posição dinâmica abaixo das opções
+    const yFeedback = Math.min(500, 340 + opcoesRespostas.length * 60);
+    drawText("Errado! -5 pontos", 40, yFeedback, "#a00", 14);
     setTimeout(() => novaRodadaJogo2(), 1000);
   }
   

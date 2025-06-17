@@ -1,19 +1,18 @@
-// jogo3_funcoes_lineares.js
-import { ctx, drawText, drawAxes, canvas } from './common.js';
+import { ctx, drawText, canvas, controls, infoPanel, gameInfo } from './common.js';
 
+// Variáveis para cálculo dinâmico
+let ORIGIN_X, ORIGIN_Y, MAX_X, MAX_Y;
+const GRID_SIZE = 40; // Cada quadrado = 1 unidade
+
+// Variáveis de estado
 let pontuacao3 = 0;
 let rodada3 = 0;
 let funcaoCorreta = null;
 let opcoesFuncao = [];
 let jogoGanho = false;
 let confetes = [];
-const GRID_SIZE = 40; // Each square = 1 unit
-const ORIGIN_X = Math.floor(canvas.width / 2 / GRID_SIZE) * GRID_SIZE;
-const ORIGIN_Y = Math.floor(canvas.height / 2 / GRID_SIZE) * GRID_SIZE;
-const MAX_X = Math.floor((canvas.width - ORIGIN_X) / GRID_SIZE);
-const MAX_Y = Math.floor(ORIGIN_Y / GRID_SIZE);
 
-// Confetti colors and shapes
+// Cores e formas dos confetes
 const CORES_CONFETE = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff9900', '#9900ff'];
 const FORMAS_CONFETE = ['retangulo', 'circulo', 'triangulo', 'linha'];
 
@@ -88,16 +87,33 @@ class Confete {
 }
 
 export function iniciar() {
-  pontuacao3 = 0;
+  pontuacao3 = parseInt(localStorage.getItem("pontuacao3")) || 0;
   rodada3 = 0;
+  funcaoCorreta = null;
+  opcoesFuncao = [];
   jogoGanho = false;
   confetes = [];
+  
+  // Calcular dinamicamente ao iniciar
+  ORIGIN_X = Math.round(canvas.width / 2 / GRID_SIZE) * GRID_SIZE;
+  ORIGIN_Y = Math.round(canvas.height / 2 / GRID_SIZE) * GRID_SIZE;
+  MAX_X = Math.floor((canvas.width - ORIGIN_X) / GRID_SIZE);
+  MAX_Y = Math.floor(ORIGIN_Y / GRID_SIZE);
+  
+  // Limpar canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  controls.innerHTML = `FUNÇÕES LINEARES | 1/2/3: selecionar | ESC: voltar`;
   novaRodadaJogo3();
+  atualizarPainelInfo();
 }
 
 export function desenhar() {
   if (jogoGanho) {
     desenharVitoria();
+  } else {
+    desenharGraficoFuncao(funcaoCorreta);
+    desenharInterface();
   }
 }
 
@@ -176,40 +192,48 @@ function gerarOpcoes(correta) {
 function desenharGraficoFuncao(f) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // Draw grid
+  // Desenhar grade - corrigido para centralizar com os eixos
   ctx.strokeStyle = "#e0e0e0";
   ctx.lineWidth = 1;
   
-  for (let x = 0; x <= canvas.width; x += GRID_SIZE) {
+  // Linhas verticais alinhadas com a grade
+  for (let x = ORIGIN_X % GRID_SIZE; x <= canvas.width; x += GRID_SIZE) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvas.height);
     ctx.stroke();
   }
   
-  for (let y = 0; y <= canvas.height; y += GRID_SIZE) {
+  // Linhas horizontais alinhadas com a grade
+  for (let y = ORIGIN_Y % GRID_SIZE; y <= canvas.height; y += GRID_SIZE) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(canvas.width, y);
     ctx.stroke();
   }
   
-  // Draw axes
+  // Desenhar eixos
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 2;
+  
+  // Eixo X - agora centralizado com a grade
   ctx.beginPath();
   ctx.moveTo(0, ORIGIN_Y);
   ctx.lineTo(canvas.width, ORIGIN_Y);
+  ctx.stroke();
+  
+  // Eixo Y - agora centralizado com a grade
+  ctx.beginPath();
   ctx.moveTo(ORIGIN_X, 0);
   ctx.lineTo(ORIGIN_X, canvas.height);
   ctx.stroke();
   
-  // Draw function - CORRECTED HANDLING OF NEGATIVE b VALUES
+  // Desenhar a função
   ctx.beginPath();
   ctx.strokeStyle = "#cc0000";
   ctx.lineWidth = 3;
   
-  // Calculate two points on the line
+  // Calcular dois pontos na reta: x = -MAX_X e x = MAX_X
   const x1 = -MAX_X;
   const y1 = f.m * x1 + f.b;
   const px1 = ORIGIN_X + x1 * GRID_SIZE;
@@ -224,68 +248,96 @@ function desenharGraficoFuncao(f) {
   ctx.lineTo(px2, py2);
   ctx.stroke();
   
-  // Draw axis labels
+  // Desenhar rótulos dos eixos
   ctx.fillStyle = "#000";
-  ctx.font = "12px Arial";
+  ctx.font = "12px 'Press Start 2P'";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   
-  // X axis labels
-  for (let x = 1; x <= MAX_X; x++) {
-    const px = ORIGIN_X + x * GRID_SIZE;
-    ctx.fillText(x.toString(), px, ORIGIN_Y + 15);
+  // Rótulos do eixo X
+  for (let x = -MAX_X; x <= MAX_X; x++) {
+    if (x !== 0) {
+      const px = ORIGIN_X + x * GRID_SIZE;
+      ctx.fillText(x.toString(), px, ORIGIN_Y + 15);
+    }
   }
   
-  for (let x = -1; x >= -MAX_X; x--) {
-    const px = ORIGIN_X + x * GRID_SIZE;
-    ctx.fillText(x.toString(), px, ORIGIN_Y + 15);
+  // Rótulos do eixo Y
+  for (let y = -MAX_Y; y <= MAX_Y; y++) {
+    if (y !== 0) {
+      const py = ORIGIN_Y - y * GRID_SIZE;
+      ctx.fillText(y.toString(), ORIGIN_X - 15, py);
+    }
   }
   
-  // Y axis labels
-  for (let y = 1; y <= MAX_Y; y++) {
-    const py = ORIGIN_Y - y * GRID_SIZE;
-    ctx.fillText(y.toString(), ORIGIN_X - 15, py);
-  }
-  
-  for (let y = -1; y >= -MAX_Y; y--) {
-    const py = ORIGIN_Y - y * GRID_SIZE;
-    ctx.fillText(y.toString(), ORIGIN_X - 15, py);
-  }
-  
-  // Origin
+  // Origem
   ctx.fillText("0", ORIGIN_X - 15, ORIGIN_Y + 15);
+}
+
+function desenharInterface() {
+  // Reposicionar as perguntas para a parte inferior direita
+  const boxWidth = Math.min(350, canvas.width * 0.75); // Largura um pouco maior
+  const boxHeight = 170;
+  const boxX = canvas.width - boxWidth - 20; // 20px de margem direita
+  const boxY = canvas.height - boxHeight - 20; // 20px de margem inferior
+  
+  // Fundo semi-transparente com borda
+  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 10);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Título da pergunta
+  const titulo = "Qual é a função desta reta?";
+  drawText(titulo, boxX + boxWidth/2, boxY + 25, "#000", 13, "center");
+  
+  // Opções de resposta em linha única
+  opcoesFuncao.forEach((f, i) => {
+    const sinalB = f.b >= 0 ? '+' : '-';
+    const texto = `[${i + 1}] f(x) = ${f.m.toFixed(1)}x ${sinalB} ${Math.abs(f.b).toFixed(1)}`;
+    
+    // Posição vertical baseada no índice
+    const posY = boxY + 55 + i * 30;
+    
+    // Desenha o texto da opção
+    drawText(texto, boxX + boxWidth/2, posY, "#000", 14, "center");
+  });
+  
+  // Pontuação - mantido no canto superior direito
+  drawText(`Pontuação: ${pontuacao3}`, canvas.width - 100, 30, "#000", 14);
 }
 
 function criarConfetes() {
   confetes = [];
   for (let i = 0; i < 300; i++) {
-    setTimeout(() => {
-      confetes.push(new Confete());
-    }, Math.random() * 2000);
+    confetes.push(new Confete());
   }
 }
 
 function desenharVitoria() {
-  // Semi-transparent overlay
+  // Fundo semi-transparente
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // Draw all confetti
+  // Desenhar confetes
   confetes.forEach(confete => {
     confete.update();
     confete.draw();
   });
 
-  // Victory message
+  // Mensagem de vitória
   ctx.fillStyle = '#000';
-  ctx.font = 'bold 36px Arial';
+  ctx.font = 'bold 36px "Press Start 2P"';
   ctx.textAlign = 'center';
   ctx.fillText('PARABÉNS! VOCÊ VENCEU!', canvas.width/2, canvas.height/2 - 40);
   
-  ctx.font = '24px Arial';
+  ctx.font = '24px "Press Start 2P"';
   ctx.fillText(`Pontuação final: ${pontuacao3}`, canvas.width/2, canvas.height/2 + 20);
   
-  ctx.font = '18px Arial';
+  ctx.font = '18px "Press Start 2P"';
   ctx.fillText('Pressione Enter para jogar novamente', canvas.width/2, canvas.height/2 + 70);
 }
 
@@ -293,16 +345,6 @@ function novaRodadaJogo3() {
   if (pontuacao3 >= 100 && !jogoGanho) {
     jogoGanho = true;
     criarConfetes();
-    
-    const animar = () => {
-      if (!jogoGanho) return;
-      
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      desenharVitoria();
-      requestAnimationFrame(animar);
-    };
-    
-    animar();
     return;
   }
 
@@ -316,21 +358,8 @@ function novaRodadaJogo3() {
                    new Set(opcoesFuncao.map(f => `${f.m},${f.b}`)).size === 3;
   }
 
-  desenharGraficoFuncao(funcaoCorreta);
-  
-  // Draw question interface
-  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.fillRect(20, 20, canvas.width - 40, 150);
-  
-  drawText("Qual é a função desta reta?", canvas.width/2, 50, "#000", 18, "center");
-  
-  opcoesFuncao.forEach((f, i) => {
-    const sinalB = f.b >= 0 ? '+' : '-';
-    drawText(`[${i + 1}] f(x) = ${f.m.toFixed(1)}x ${sinalB} ${Math.abs(f.b).toFixed(1)}`, 
-             canvas.width/2, 90 + i * 30, "#000", 16, "center");
-  });
-  
-  drawText(`Pontuação: ${pontuacao3}`, canvas.width - 100, 30, "#000", 14);
+  desenhar();
+  atualizarPainelInfo();
 }
 
 function verificarRespostaJogo3(opcao) {
@@ -345,11 +374,51 @@ function verificarRespostaJogo3(opcao) {
   if (acertou) {
     pontuacao3 += 10;
     drawText("✓ Correto! +10 pontos", canvas.width/2, 180, "#0a0", 16, "center");
-    setTimeout(() => novaRodadaJogo3(), 1000);
   } else {
     pontuacao3 = Math.max(0, pontuacao3 - 5);
     drawText("✗ Errado! -5 pontos", canvas.width/2, 180, "#a00", 16, "center");
-    setTimeout(() => novaRodadaJogo3(), 1000);
   }
   localStorage.setItem("pontuacao3", pontuacao3);
+  
+  atualizarPainelInfo();
+  
+  // Aguarda 1 segundo e passa para a próxima rodada
+  setTimeout(() => {
+    if (!jogoGanho) {
+      novaRodadaJogo3();
+    }
+  }, 1000);
 }
+
+function atualizarPainelInfo() {
+  infoPanel.style.display = "block";
+  
+  gameInfo.innerHTML = `
+    <strong>INSTRUÇÕES:</strong><br><br>
+    <strong>1/2/3</strong>: Selecionar a função correspondente ao gráfico<br>
+    <strong>Enter</strong>: Reiniciar após vencer<br><br>
+    <strong>OBJETIVO:</strong><br>
+    Identifique a função linear (f(x) = mx + b) que corresponde ao gráfico em vermelho.<br><br>
+    <strong>REGRAS:</strong><br>
+    - Acerto: +10 pontos<br>
+    - Erro: -5 pontos<br>
+    - Vença ao atingir 100 pontos<br><br>
+    <strong>PONTUAÇÃO ATUAL:</strong> ${pontuacao3}<br>
+    <strong>RODADA:</strong> ${rodada3}
+  `;
+}
+
+// Adiciona suporte para retângulos arredondados
+CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+  if (width < 2 * radius) radius = width / 2;
+  if (height < 2 * radius) radius = height / 2;
+  
+  this.beginPath();
+  this.moveTo(x + radius, y);
+  this.arcTo(x + width, y, x + width, y + height, radius);
+  this.arcTo(x + width, y + height, x, y + height, radius);
+  this.arcTo(x, y + height, x, y, radius);
+  this.arcTo(x, y, x + width, y, radius);
+  this.closePath();
+  return this;
+};
